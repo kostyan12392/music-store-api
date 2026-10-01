@@ -1,5 +1,6 @@
-const Product = require('../models/productModel');
+const { Product } = require('../models');
 
+// Валидация входных данных
 function validateProduct(body) {
   const { title, artist, price, stock } = body;
 
@@ -22,53 +23,81 @@ function validateProduct(body) {
   return null;
 }
 
-exports.getAll = (req, res) => {
-  res.json(Product.findAll());
+// GET /api/products
+exports.getAll = async (req, res, next) => {
+  try {
+    const products = await Product.findAll();
+    res.json(products);
+  } catch (err) {
+    next(err);
+  }
 };
 
-exports.getById = (req, res) => {
-  const product = Product.findById(req.params.id);
+// GET /api/products/:id
+exports.getById = async (req, res, next) => {
+  try {
+    const product = await Product.findByPk(req.params.id);
 
-  if (!product) {
-    return res.status(404).json({ error: 'Product not found' });
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    res.json(product);
+  } catch (err) {
+    next(err);
   }
-
-  res.json(product);
 };
 
-exports.create = (req, res) => {
-  const error = validateProduct(req.body);
+// POST /api/products
+exports.create = async (req, res, next) => {
+  try {
+    const error = validateProduct(req.body);
 
-  if (error) {
-    return res.status(400).json({ error });
+    if (error) {
+      return res.status(400).json({ error });
+    }
+
+    const product = await Product.create(req.body);
+    res.status(201).json(product);
+  } catch (err) {
+    next(err);
   }
-
-  const product = Product.create(req.body);
-  res.status(201).json(product);
 };
 
-exports.update = (req, res) => {
-  const error = validateProduct(req.body);
+// PUT /api/products/:id
+exports.update = async (req, res, next) => {
+  try {
+    const error = validateProduct(req.body);
 
-  if (error) {
-    return res.status(400).json({ error });
+    if (error) {
+      return res.status(400).json({ error });
+    }
+
+    const product = await Product.findByPk(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    await product.update(req.body);
+    res.json(product);
+  } catch (err) {
+    next(err);
   }
-
-  const product = Product.update(req.params.id, req.body);
-
-  if (!product) {
-    return res.status(404).json({ error: 'Product not found' });
-  }
-
-  res.json(product);
 };
 
-exports.remove = (req, res) => {
-  const deleted = Product.remove(req.params.id);
+// DELETE /api/products/:id
+exports.remove = async (req, res, next) => {
+  try {
+    const product = await Product.findByPk(req.params.id);
 
-  if (!deleted) {
-    return res.status(404).json({ error: 'Product not found' });
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    await product.destroy();
+    res.status(204).send();
+  } catch (err) {
+    next(err);
   }
-
-  res.status(204).send();
 };
