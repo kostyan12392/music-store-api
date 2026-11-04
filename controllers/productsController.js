@@ -24,9 +24,21 @@ function validateProduct(body) {
 }
 
 // GET /api/products
+const { Op } = require('sequelize');
+
 exports.getAll = async (req, res, next) => {
   try {
-    const products = await Product.findAll();
+    const { search } = req.query;
+
+    const where = {};
+    if (search && search.trim()) {
+      where[Op.or] = [
+        { title:  { [Op.iLike]: `%${search.trim()}%` } },
+        { artist: { [Op.iLike]: `%${search.trim()}%` } },
+      ];
+    }
+
+    const products = await Product.findAll({ where });
     res.json(products);
   } catch (err) {
     next(err);
